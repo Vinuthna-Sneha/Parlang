@@ -1,0 +1,13 @@
+# Python-specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# Miscellaneous
+*.log
+*.DS_Store
