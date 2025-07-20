@@ -1,0 +1,13 @@
+<program> ::= <function>*
+<function> ::= "fn" <identifier> "(" ")" "{" <statement>* "}"
+<statement> ::= <let_stmt> | <parfor_stmt> | <print_stmt> | <return_stmt>
+<let_stmt> ::= "let" <identifier> "=" <expression> ";"
+<parfor_stmt> ::= "parfor" <identifier> "in" <expression> "{" <statement>* "}"
+<print_stmt> ::= "print" "(" <expression> ")" ";"
+<return_stmt> ::= "return" <expression> ";"
+<expression> ::= <identifier> | <number> | <array> | <binary_expr>
+<array> ::= "[" <expression> ("," <expression>)* "]"
+<binary_expr> ::= <expression> <operator> <expression>
+<operator> ::= "+" | "-" | "*" | "/"
+<identifier> ::= [a-zA-Z][a-zA-Z0-9]*
+<number> ::= [0-9]+
