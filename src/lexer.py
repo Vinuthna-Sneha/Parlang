@@ -24,6 +24,7 @@ class Lexer:
             ('SEMICOLON', r';'),           # ;
             ('COMMA',    r','),            # ,
             ('OPERATOR', r'\+|-|\*|\/'),   # Operators
+            ('EQUALS',   r'='),            # = (Added)
             ('WHITESPACE', r'\s+'),        # Whitespace
         ]
         self.token_re = '|'.join(f'(?P<{pair[0]}>{pair[1]})' for pair in self.token_spec)
