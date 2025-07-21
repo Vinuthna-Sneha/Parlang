@@ -25,10 +25,11 @@ class TestCompiler(unittest.TestCase):
         }
         """
         output = compile_source(source)
-        self.assertIn("PARFOR", output)
+        self.assertIn("PARFOR n numbers", output)
         self.assertIn("ENDPARFOR", output)
         self.assertIn("MUL", output)
         self.assertIn("PRINT", output)
+        self.assertIn("STORE_ARRAY", output)
 
 if __name__ == '__main__':
     unittest.main()

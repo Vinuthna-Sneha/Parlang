@@ -15,8 +15,6 @@ def compile_file(filepath):
         # Tokenize
         lexer = Lexer(source)
         tokens = lexer.tokenize()
-        for token in tokens:
-            print(f"Token: {token.type}, Value: {token.value}, Line: {token.line}")
 
         # Parse
         parser = Parser(tokens)

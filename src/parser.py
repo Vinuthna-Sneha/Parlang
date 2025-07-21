@@ -1,5 +1,5 @@
 class Node:
-    def __init__(self, type, value=None, children=None):
+    def __init__(self, type, value, children=None):
         self.type = type
         self.value = value
         self.children = children or []
@@ -14,20 +14,22 @@ class Parser:
             token = self.tokens[self.pos]
             self.pos += 1
             return token
-        raise SyntaxError(f"Expected {expected_type} at line {self.tokens[self.pos].line if self.pos < len(self.tokens) else 'EOF'}")
+        expected_line = self.tokens[self.pos].line if self.pos < len(self.tokens) else 'EOF'
+        actual_token = self.tokens[self.pos].type if self.pos < len(self.tokens) else 'EOF'
+        raise SyntaxError(f"Expected {expected_type} but found {actual_token} at line {expected_line}")
 
     def parse(self):
-        return Node("Program", children=self.parse_program())
-
-    def parse_program(self):
-        functions = []
-        while self.pos < len(self.tokens) and self.tokens[self.pos].type == 'FN':
-            functions.append(self.parse_function())
-        return functions
+        nodes = []
+        while self.pos < len(self.tokens):
+            if self.tokens[self.pos].type == 'FN':
+                nodes.append(self.parse_function())
+            else:
+                raise SyntaxError(f"Unexpected token {self.tokens[self.pos].type} at line {self.tokens[self.pos].line}")
+        return Node("Program", None, nodes)
 
     def parse_function(self):
         self.consume('FN')
-        ident = self.consume('IDENT')
+        ident = self.consume('IDENT').value
         self.consume('LPAREN')
         self.consume('RPAREN')
         self.consume('LBRACE')
@@ -35,81 +37,88 @@ class Parser:
         while self.pos < len(self.tokens) and self.tokens[self.pos].type != 'RBRACE':
             statements.append(self.parse_statement())
         self.consume('RBRACE')
-        return Node("Function", ident.value, statements)
+        return Node("Function", ident, statements)
 
     def parse_statement(self):
         if self.tokens[self.pos].type == 'LET':
-            return self.parse_let_stmt()
+            return self.parse_let()
         elif self.tokens[self.pos].type == 'PARFOR':
-            return self.parse_parfor_stmt()
+            return self.parse_parfor()
         elif self.tokens[self.pos].type == 'PRINT':
-            return self.parse_print_stmt()
+            return self.parse_print()
         elif self.tokens[self.pos].type == 'RETURN':
-            return self.parse_return_stmt()
-        raise SyntaxError(f"Unexpected token {self.tokens[self.pos].type} at line {self.tokens[self.pos].line}")
+            return self.parse_return()
+        else:
+            raise SyntaxError(f"Unexpected token {self.tokens[self.pos].type} at line {self.tokens[self.pos].line}")
 
-    def parse_let_stmt(self):
+    def parse_let(self):
         self.consume('LET')
-        ident = self.consume('IDENT')
+        ident = self.consume('IDENT').value
         self.consume('EQUALS')
         expr = self.parse_expression()
         self.consume('SEMICOLON')
-        return Node("Let", ident.value, [expr])
+        return Node("Let", ident, [expr])
 
-    def parse_parfor_stmt(self):
+    def parse_parfor(self):
         self.consume('PARFOR')
-        ident = self.consume('IDENT')
+        ident = self.consume('IDENT').value
         self.consume('IN')
-        expr = self.parse_expression()
+        array = self.parse_expression()
         self.consume('LBRACE')
         statements = []
         while self.pos < len(self.tokens) and self.tokens[self.pos].type != 'RBRACE':
             statements.append(self.parse_statement())
         self.consume('RBRACE')
-        return Node("ParFor", ident.value, [expr] + statements)
+        return Node("ParFor", ident, [array] + statements)
 
-    def parse_print_stmt(self):
+    def parse_print(self):
         self.consume('PRINT')
         self.consume('LPAREN')
         expr = self.parse_expression()
         self.consume('RPAREN')
         self.consume('SEMICOLON')
-        return Node("Print", children=[expr])
+        return Node("Print", None, [expr])
 
-    def parse_return_stmt(self):
+    def parse_return(self):
         self.consume('RETURN')
         expr = self.parse_expression()
         self.consume('SEMICOLON')
-        return Node("Return", children=[expr])
+        return Node("Return", None, [expr])
 
-    def parse_expression(self):
-        # Parse primary expression
+    def parse_expression(self, min_precedence=0):
+        node = self.parse_primary()
+        while self.pos < len(self.tokens) and self.tokens[self.pos].type == 'OPERATOR':
+            op = self.tokens[self.pos].value
+            precedence = {'+': 1, '-': 1, '*': 2, '/': 2}.get(op, 0)
+            if precedence < min_precedence:
+                break
+            self.consume('OPERATOR')
+            right = self.parse_expression(precedence + 1)
+            node = Node("BinaryExpr", op, [node, right])
+        return node
+
+    def parse_primary(self):
         if self.tokens[self.pos].type == 'NUMBER':
-            node = Node("Number", self.consume('NUMBER').value)
+            return Node("Number", self.consume('NUMBER').value)
         elif self.tokens[self.pos].type == 'IDENT':
-            node = Node("Identifier", self.consume('IDENT').value)
+            return Node("Identifier", self.consume('IDENT').value)
         elif self.tokens[self.pos].type == 'LBRACKET':
-            node = self.parse_array()
+            return self.parse_array()
         elif self.tokens[self.pos].type == 'LPAREN':
             self.consume('LPAREN')
-            node = self.parse_expression()
+            expr = self.parse_expression()
             self.consume('RPAREN')
+            return expr
         else:
             raise SyntaxError(f"Unexpected token {self.tokens[self.pos].type} at line {self.tokens[self.pos].line}")
-
-        # Handle binary operators
-        while self.pos < len(self.tokens) and self.tokens[self.pos].type == 'OPERATOR':
-            op = self.consume('OPERATOR')
-            right = self.parse_expression()
-            node = Node("BinaryExpr", op.value, [node, right])
-        return node
 
     def parse_array(self):
         self.consume('LBRACKET')
         elements = []
-        while self.pos < len(self.tokens) and self.tokens[self.pos].type != 'RBRACKET':
+        if self.pos < len(self.tokens) and self.tokens[self.pos].type != 'RBRACKET':
             elements.append(self.parse_expression())
-            if self.pos < len(self.tokens) and self.tokens[self.pos].type == 'COMMA':
+            while self.pos < len(self.tokens) and self.tokens[self.pos].type == 'COMMA':
                 self.consume('COMMA')
+                elements.append(self.parse_expression())
         self.consume('RBRACKET')
-        return Node("Array", children=elements)
+        return Node("Array", None, elements)

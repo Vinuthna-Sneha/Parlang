@@ -1,3 +1,5 @@
+import sys
+
 class VirtualMachine:
     def __init__(self):
         self.stack = []
@@ -6,10 +8,11 @@ class VirtualMachine:
         self.pc = 0
 
     def run(self, code):
-        if isinstance(code, str):
-            lines = code.split('\n')
+        if isinstance(code, str) and code.endswith('.vm'):
+            with open(code, 'r') as file:
+                lines = file.readlines()
         else:
-            lines = code  # Assume code is already a list of lines
+            lines = code.split('\n') if isinstance(code, str) else code
         self.pc = 0
         while self.pc < len(lines):
             instr = lines[self.pc].strip()
@@ -29,7 +32,7 @@ class VirtualMachine:
                 self.stack.append(a * b)
             elif op == 'STORE_ARRAY':
                 dest, count = parts[1], int(parts[2])
-                array = [self.stack.pop() for _ in range(int(count))][::-1]  # Reverse to maintain order
+                array = [self.stack.pop() for _ in range(int(count))][::-1]
                 self.variables[dest] = array
             elif op == 'PARFOR':
                 var, array, label = parts[1], parts[2], parts[3].rstrip(':')
@@ -39,12 +42,21 @@ class VirtualMachine:
                     self.variables[var] = val
                     self.pc = self.labels[label]
                     while self.pc < len(lines) and lines[self.pc].strip() != f"ENDPARFOR {label}":
-                        self.run(lines[self.pc])  # Recursive call for loop body
+                        self.run([lines[self.pc]])
                     self.pc = self.labels[label] - 1
             elif op == 'ENDPARFOR':
-                pass  # Handled in PARFOR
+                pass
             elif op == 'PRINT':
                 print(self.stack.pop())
             elif op == 'RET':
                 break
+            else:
+                raise ValueError(f"Unknown VM instruction: {instr}")
             self.pc += 1
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python vm_simulator.py <input_file>")
+        sys.exit(1)
+    vm = VirtualMachine()
+    vm.run(sys.argv[1])
