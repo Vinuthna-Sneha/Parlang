@@ -6,7 +6,10 @@ class VirtualMachine:
         self.pc = 0
 
     def run(self, code):
-        lines = code.split('\n')
+        if isinstance(code, str):
+            lines = code.split('\n')
+        else:
+            lines = code  # Assume code is already a list of lines
         self.pc = 0
         while self.pc < len(lines):
             instr = lines[self.pc].strip()
@@ -35,7 +38,7 @@ class VirtualMachine:
                 for val in array_vals:
                     self.variables[var] = val
                     self.pc = self.labels[label]
-                    while lines[self.pc].strip() != f"ENDPARFOR {label}":
+                    while self.pc < len(lines) and lines[self.pc].strip() != f"ENDPARFOR {label}":
                         self.run(lines[self.pc])  # Recursive call for loop body
                     self.pc = self.labels[label] - 1
             elif op == 'ENDPARFOR':

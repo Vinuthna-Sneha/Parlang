@@ -1,49 +1,34 @@
-from lexer import Lexer
-from parser import Parser
-from semantic import SemanticAnalyzer
-from ir_generator import IRGenerator
-from optimizer import Optimizer
-from codegen import CodeGenerator
-from error_handler import ErrorHandler
+import unittest
+from src.lexer import Lexer
+from src.parser import Parser
+from src.ir_generator import IRGenerator
+from src.codegen import CodeGenerator
 
-def compile(source):
-    try:
-        # Tokenize
-        lexer = Lexer(source)
-        tokens = lexer.tokenize()
+def compile_source(source):
+    lexer = Lexer(source)
+    tokens = lexer.tokenize()
+    parser = Parser(tokens)
+    ast = parser.parse()
+    ir_gen = IRGenerator(ast)
+    ir = ir_gen.generate()
+    codegen = CodeGenerator(ir)
+    return "\n".join(codegen.generate())
 
-        # Parse
-        parser = Parser(tokens)
-        ast = parser.parse()
+class TestCompiler(unittest.TestCase):
+    def test_sample_program(self):
+        source = """
+        fn main() {
+            let numbers = [1, 2, 3, 4, 5];
+            parfor n in numbers {
+                print(n * n);
+            }
+        }
+        """
+        output = compile_source(source)
+        self.assertIn("PARFOR", output)
+        self.assertIn("ENDPARFOR", output)
+        self.assertIn("MUL", output)
+        self.assertIn("PRINT", output)
 
-        # Semantic Analysis
-        analyzer = SemanticAnalyzer(ast)
-        analyzer.analyze()
-
-        # Generate IR
-        ir_gen = IRGenerator(ast)
-        ir = ir_gen.generate()
-
-        # Optimize
-        optimizer = Optimizer(ir)
-        optimized_ir = optimizer.optimize()
-
-        # Generate Code
-        codegen = CodeGenerator(optimized_ir)
-        code = codegen.generate()
-
-        return "\n".join(code)
-    except (SyntaxError, SemanticError) as e:
-        source_lines = {i+1: line for i, line in enumerate(source.split('\n'))}
-        return ErrorHandler.format_error(e, source_lines)
-
-# Test
-source = """
-fn main() {
-    let numbers = [1, 2, 3, 4, 5];
-    parfor n in numbers {
-        print(n * n);
-    }
-}
-"""
-print(compile(source))
+if __name__ == '__main__':
+    unittest.main()

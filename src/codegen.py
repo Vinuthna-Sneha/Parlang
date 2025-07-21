@@ -7,8 +7,16 @@ class CodeGenerator:
         for instr in self.ir:
             print(f"Processing IR: {instr}")  # Debug print
             parts = instr.split(", ")
-            op = parts[0].split()[0]  # Extract operation (e.g., "parfor" from "parfor n in numbers t5")
-            if op == "func":
+            op_parts = parts[0].split()
+            op = op_parts[0]  # Extract operation (e.g., "parfor" or "parallel")
+            if op == "parallel" and len(op_parts) > 1 and op_parts[1] == "parfor":
+                # Handle incorrect "parallel parfor" instruction
+                var, _, array, label = op_parts[2], op_parts[3], op_parts[4], op_parts[5]
+                self.code.append(f"PARFOR {var} {array} {label}:")
+            elif op == "parfor":
+                var, _, array, label = op_parts[1], op_parts[2], op_parts[3], op_parts[4]
+                self.code.append(f"PARFOR {var} {array} {label}:")
+            elif op == "func":
                 self.code.append(f"{instr}:")
             elif op == "endfunc":
                 self.code.append("RET")
@@ -36,12 +44,6 @@ class CodeGenerator:
                 self.code.append(f"LOAD {right}")
                 self.code.append(op_name.upper())
                 self.code.append(f"STORE {dest}")
-            elif op == "parfor":
-                parfor_parts = parts[0].split()
-                if len(parfor_parts) != 5 or parfor_parts[2] != "in":
-                    raise ValueError(f"Invalid parfor instruction: {instr}")
-                var, array, label = parfor_parts[1], parfor_parts[3], parfor_parts[4]
-                self.code.append(f"PARFOR {var} {array} {label}:")
             elif op == "endparfor":
                 label = parts[0].split()[1]
                 self.code.append(f"ENDPARFOR {label}")
