@@ -29,7 +29,7 @@ class VirtualMachine:
                 array = [self.stack.pop() for _ in range(int(count))][::-1]  # Reverse to maintain order
                 self.variables[dest] = array
             elif op == 'PARFOR':
-                var, array, label = parts[1], parts[2], parts[3]
+                var, array, label = parts[1], parts[2], parts[3].rstrip(':')
                 self.labels[label] = self.pc + 1
                 array_vals = self.variables[array]
                 for val in array_vals:

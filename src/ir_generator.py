@@ -15,7 +15,7 @@ class IRGenerator:
         return self.ir
 
     def generate_function(self, node):
-        self.ir.append(f"func {node.value}:")
+        self.ir.append(f"func {node.value}")
         for stmt in node.children:
             self.generate_statement(stmt)
         self.ir.append("endfunc")
@@ -29,7 +29,7 @@ class IRGenerator:
             ident = node.value
             array = self.generate_expression(node.children[0])
             loop_label = self.new_temp()
-            self.ir.append(f"parfor {ident} in {array} {loop_label}:")
+            self.ir.append(f"parfor {ident} in {array} {loop_label}")
             for stmt in node.children[1:]:
                 self.generate_statement(stmt)
             self.ir.append(f"endparfor {loop_label}")
@@ -50,11 +50,11 @@ class IRGenerator:
         elif node.type == "Array":
             temp = self.new_temp()
             elements = [self.generate_expression(elem) for elem in node.children]
-            self.ir.append(f"array [{','.join(elements)}], {temp} {len(elements)}")
+            self.ir.append(f"array {','.join(elements)}, {temp}, {len(elements)}")
             return temp
         elif node.type == "BinaryExpr":
             left = self.generate_expression(node.children[0])
             right = self.generate_expression(node.children[1])
             temp = self.new_temp()
-            self.ir.append(f"op {node.value} {left}, {right}, {temp}")
+            self.ir.append(f"op {node.value}, {left}, {right}, {temp}")
             return temp
