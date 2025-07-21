@@ -10,18 +10,21 @@ class CodeGenerator:
             elif instr.startswith("endfunc"):
                 self.code.append("RET")
             elif instr.startswith("const"):
-                _, value, dest = instr.split()
+                _, value, dest = instr.split(", ")
                 self.code.append(f"PUSH {value}")
                 self.code.append(f"STORE {dest}")
             elif instr.startswith("store"):
-                _, src, dest = instr.split()
+                _, src, dest = instr.split(", ")
                 self.code.append(f"STORE {dest}")
             elif instr.startswith("array"):
-                _, elements, dest = instr.split()
-                elements = elements.strip('[]').split(',')
+                # Extract elements and destination
+                parts = instr.split(", ")
+                elements = parts[0].split("[")[1].split("]")[0].split(",")
+                dest = parts[1]
+                count = parts[2]
                 for elem in elements:
                     self.code.append(f"PUSH {elem}")
-                self.code.append(f"STORE_ARRAY {dest} {len(elements)}")
+                self.code.append(f"STORE_ARRAY {dest} {count}")
             elif instr.startswith("op"):
                 _, op, left, right, dest = instr.split()
                 self.code.append(f"LOAD {left}")

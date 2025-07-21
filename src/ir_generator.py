@@ -50,7 +50,7 @@ class IRGenerator:
         elif node.type == "Array":
             temp = self.new_temp()
             elements = [self.generate_expression(elem) for elem in node.children]
-            self.ir.append(f"array [{','.join(elements)}], {temp}")
+            self.ir.append(f"array [{','.join(elements)}], {temp} {len(elements)}")
             return temp
         elif node.type == "BinaryExpr":
             left = self.generate_expression(node.children[0])
